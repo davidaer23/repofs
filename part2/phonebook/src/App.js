@@ -1,53 +1,105 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import Person from "./components/Person"
+import personService from './services/persons'
+import Notification from './components/Notification'
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [wordFilter, setFilter] = useState('')
+  const [actualMessage, setMessage] = useState(null)
+  const [actualStyle, setStyle] = useState('container')
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
+    personService
+      .getAll()
+      .then(person => {
+        setPersons(person)
       })
   }, [])
+
+  const callMessage = (text, style) =>{
+    setStyle(style)
+    setMessage(
+      `${text}`
+    )
+    setTimeout(() => {
+      setMessage(null)
+    },2000)
+  }
 
   const addPerson = (event) =>{
     event.preventDefault()
     const names = persons.map(person => person.name)
 
     if(names.includes(newName)){
-      window.alert(`${newName} is already added to phonebook`)
+      if(window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
+        const person = persons.find(person => person.name === newName)
+        const changedPerson = {...person, number: newNumber }
+        const id = person.id
+        personService
+        .update(id, changedPerson)
+        .then( returnedPerson =>{
+          setPersons(persons.map(person => person.id !== id ? person : returnedPerson))
+          callMessage(`${person.name} number changed`, 'container')
+        }).catch(error =>{
+          setStyle('error')
+          callMessage(`'${person.name}' was already removed from server`, 'error')
+          setPersons(persons.filter(p => p.id !== id ))
+        })
+      }
       setNewName('')
       setNewNumber('')
     }else{
       const personObject = {
         name: newName,
         number: newNumber,
-        id: persons.length + 1
+        id: persons[persons.length-1].id + 1
       }
-      setPersons(persons.concat(personObject))
-      setNewName('')
-      setNewNumber('')
+      personService
+      .create(personObject)
+      .then(person => {
+        setPersons(persons.concat(person)) 
+        callMessage(`Added ${person.name}`, 'container')
+        setNewName('')
+        setNewNumber('')
+      })
+      
     }
 
   }
+
+  const deleteNumber = (id, name) =>{
+    if(window.confirm(`Delete ${name} ?`) ){
+    personService
+    .deleteItem(id)
+    .then(person => {
+      setPersons(persons.filter(p => p.id !== id))
+    })}
+  } 
+
+  
 
   const handleNameChange = (event) => setNewName(event.target.value)
   const handleNumberChange = (event) => setNewNumber(event.target.value)
   const handleFilterChange = (event) => setFilter(event.target.value)
 
   
-  const personsFilter = persons.filter(person => person.name.toLowerCase().indexOf(wordFilter.toLowerCase())>=0)
+  const personsFilter =  
+  persons.filter(person => 
+    person.name
+    .toLowerCase()
+    .indexOf(
+      wordFilter.toLowerCase())>=0
+      ) 
 
+  
 
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={actualMessage} style={actualStyle}/>
       <div>filter shown with: <input value={wordFilter} onChange={handleFilterChange} /></div>
       <h2>add a new</h2>
       <form onSubmit={addPerson}>
@@ -61,7 +113,7 @@ const App = () => {
       </form>
       <h2>Numbers</h2>
       {personsFilter.map(person =>
-        <Person person={person} key={person.id}/>)}
+        <Person person={person} key={person.id} functionDelete={()=>deleteNumber(person.id, person.name)}/>)}
     </div>
   )
 }
