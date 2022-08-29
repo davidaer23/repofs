@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react'
 import { ALL_AUTHORS, EDIT_AUTHOR } from '../queries'
 
 
-const BornAuthor = () =>{
+const BornAuthor = ({show}) =>{
+  
   const [author, setAuthor] = useState('')
   const [birthyear, setBirthyear] = useState('')
 
@@ -11,12 +12,7 @@ const BornAuthor = () =>{
     const authorsFilter = resultAuthors.data.allAuthors.filter(a => a.born===null)
    
 
-  const [ editAuthor, result ] = useMutation(EDIT_AUTHOR, {
-    refetchQueries: [ {query: ALL_AUTHORS } ],
-        onError: (error) => {
-          console.log(error.graphQLErrors[0].message)
-        }
-  })
+  const [ editAuthor, result ] = useMutation(EDIT_AUTHOR, )
   
   
   const submit = (event) => {
@@ -34,6 +30,9 @@ const BornAuthor = () =>{
  
   }, [result.data]) 
 
+  if (!show) {
+    return null
+  }
   
     return(
     <div>
