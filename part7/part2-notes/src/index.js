@@ -1,5 +1,15 @@
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
 import React from 'react'
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+import ReactDOM from 'react-dom'
+import { Provider } from 'react-redux'
+import { BrowserRouter as Router } from 'react-router-dom'
+import store from './utils/store'
+import App from './App'
+
+ReactDOM.render(
+  <Provider store={store}>
+    <Router>
+      <App />
+    </Router>
+  </Provider>,
+  document.getElementById('root')
+)
